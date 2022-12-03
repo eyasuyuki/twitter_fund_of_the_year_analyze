@@ -7,3 +7,9 @@ type Tweet struct {
 	Comment   string
 	Timestamp string
 }
+
+type Fund struct {
+	Ticker string
+	Tweets []*Tweet
+	Count  int64
+}
