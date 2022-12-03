@@ -20,9 +20,3 @@ func (t *Tweet) Ticker() string {
 		return ""
 	}
 }
-
-type Fund struct {
-	Ticker string
-	Tweets []*Tweet
-	Count  int64
-}
