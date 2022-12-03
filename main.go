@@ -63,6 +63,12 @@ func main() {
 		if err != nil {
 			log.Fatal(err)
 		}
+		// analyze fund name, comment
+		doc.Find(".tweet").Each(func(i int, s *goquery.Selection) {
+			fund, comment := analyze(s.Text())
+			fmt.Printf("%d: %s %s\n", i, fund.Ticker(), comment)
+		})
+
 		doc.Find(".user_link").Each(func(i int, s *goquery.Selection) {
 			name := s.Find("strong").Text()
 			id := s.Find(".status_name").Text()
@@ -70,10 +76,7 @@ func main() {
 				fmt.Printf("%d: %s %s\n", i, name, id)
 			}
 		})
-		doc.Find(".tweet").Each(func(i int, s *goquery.Selection) {
-			fund, comment := analyze(s.Text())
-			fmt.Printf("%d: %s %s\n", i, fund, comment)
-		})
+
 		doc.Find(".status").Each(func(i int, s *goquery.Selection) {
 			ts := s.Find("a").Text()
 			fmt.Printf("%d: %s\n", i, strings.TrimSpace(ts))
