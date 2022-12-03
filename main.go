@@ -13,16 +13,32 @@ func analyze(tweet string) (string, string) {
 	if tweet == "" {
 		return "", ""
 	}
+
+	// fund
 	lines := strings.Split(tweet, "\n")
+	commentFound := false
 	for i, line := range lines {
+		if line == "" {
+			continue
+		}
+		line = strings.TrimSpace(line)
 		if fund == "" && strings.Index(line, "🥇") > -1 {
 			fund = lines[i+1]
 		}
-		if comment == "" && strings.Index(line, "→") > -1 {
-
-			break
+		if strings.Index(line, "→") > -1 {
+			commentFound = true
+			ls := strings.Split(line, "→")
+			if len(ls) > 1 && ls[1] != "" && strings.Index(line, "fundoftheyear.jp/2022/tweet.html") == -1 {
+				comment = ls[1]
+			}
+		} else if commentFound && line != "" && strings.Index(line, "fundoftheyear.jp/2022/tweet.html") == -1 {
+			if comment != "" {
+				comment = comment + "%0D%0A"
+			}
+			comment = comment + line
 		}
 	}
+
 	return fund, comment
 }
 
