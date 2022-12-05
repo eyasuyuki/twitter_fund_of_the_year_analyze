@@ -25,19 +25,14 @@ sqlite3 foy2022.db
 
 ```sql
 select
-    c,
-    name
+    count(tweets.ticker) c,
+    tickers.name
 from
-    (select
-        count(ticker) c,
-        ticker
-     from
-        tweets
-     group by
-        ticker) s1,
-    tickers
-where
-    s1.ticker=tickers.ticker
+    tweets
+    inner join tickers
+        on tweets.ticker=tickers.ticker
+group by
+    tweets.ticker
 order by
-    c desc
+    c desc;
 ```
