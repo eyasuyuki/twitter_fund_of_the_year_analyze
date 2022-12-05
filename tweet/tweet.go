@@ -3,11 +3,11 @@ package tweet
 import "strings"
 
 type Tweet struct {
-	Id        string
-	Name      string
-	Fund      string
-	Comment   string
-	Timestamp string
+	Id        string `json:"id"`
+	Name      string `json:"name"`
+	Fund      string `json:"fund"`
+	Comment   string `json:"comment"`
+	Timestamp string `json:"timestamp"`
 }
 
 func (t *Tweet) Ticker() string {

@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"github.com/PuerkitoBio/goquery"
 	"github.com/eyasuyuki/twitter_fund_of_the_year_analyze/tweet"
@@ -160,5 +161,9 @@ func main() {
 	// commit
 	tx.Commit()
 
-	fmt.Printf("%v", tweets)
+	jsonText, err := json.Marshal(tweets)
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Printf("%v", string(jsonText))
 }
