@@ -19,4 +19,5 @@ from
         on t.ticker = l.ticker
 order by
     l.c desc,
+    t.ticker asc,
     t.tweet_at asc

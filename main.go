@@ -2,8 +2,6 @@ package main
 
 import (
 	"database/sql"
-	"encoding/json"
-	"fmt"
 	"github.com/PuerkitoBio/goquery"
 	"github.com/eyasuyuki/twitter_fund_of_the_year_analyze/report"
 	"github.com/eyasuyuki/twitter_fund_of_the_year_analyze/tweet"
@@ -164,9 +162,9 @@ func main() {
 
 	report.Output(DatabaseName) //TEST
 
-	jsonText, err := json.Marshal(tweets)
-	if err != nil {
-		log.Fatal(err)
-	}
-	fmt.Printf("%v", string(jsonText))
+	//jsonText, err := json.Marshal(tweets)
+	//if err != nil {
+	//	log.Fatal(err)
+	//}
+	//fmt.Printf("%v", string(jsonText))
 }
