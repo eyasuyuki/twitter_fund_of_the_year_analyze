@@ -18,7 +18,7 @@ sqlite3 foy2022.db
 ```sqlite
 .headers on
 .mode csv
-.once './lanking.csv'
+.once './ranking.csv'
 ```
 
 ## count by ticker
@@ -37,4 +37,4 @@ order by
     c desc;
 ```
 
-File ```lanking.csv``` will be saved.
+File ```ranking.csv``` will be saved.

@@ -7,8 +7,8 @@ import (
 	"log"
 )
 
-// lanking
-const LankingSQL = `select
+// ranking
+const RankingSQL = `select
     count(tweets.ticker) c,
     tickers.name
 from
@@ -21,7 +21,7 @@ order by
     c desc
 `
 
-type Lanking struct {
+type Ranking struct {
 	Count int64 `gorm:"column:c"`
 	Name  string
 }
@@ -60,7 +60,7 @@ type Report struct {
 	TweetAt   string `gorm:"column:tweet_at"`
 }
 
-func read(ds string) ([]Lanking, []Report, error) {
+func read(ds string) ([]Ranking, []Report, error) {
 	// open sqlite
 	db, err := gorm.Open(sqlite.Open(ds), &gorm.Config{})
 	if err != nil {
@@ -72,22 +72,26 @@ func read(ds string) ([]Lanking, []Report, error) {
 	}
 	defer d.Close()
 
-	var lankings []Lanking
-	db.Raw(LankingSQL).Scan(&lankings)
+	var rankings []Ranking
+	db.Raw(RankingSQL).Scan(&rankings)
 
 	// reports
 	var reports []Report
 	db.Raw(ReportSQL).Scan(&reports)
 
-	return lankings, reports, nil
+	return rankings, reports, nil
 }
 
 // output filename
-const ReportFile = "../foy2022-tw.xlsx"
+const ReportFile = "./foy2022-tw.xlsx"
+const OldName = "Sheet1"
+const RankingName = "順位"
 
-func out(lankings []Lanking, reports []Report) error {
+func out(rankings []Ranking, reports []Report) error {
 	// open Excel file
 	f := excelize.NewFile()
+	f.SetSheetName(OldName, RankingName)
+
 	// close Excel file
 	if err := f.SaveAs(ReportFile); err != nil {
 		log.Fatal(err)
@@ -98,13 +102,13 @@ func out(lankings []Lanking, reports []Report) error {
 
 func Output(ds string) {
 	// read dababase
-	lankings, reports, err := read(ds)
+	rankings, reports, err := read(ds)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	// output excel
-	err = out(lankings, reports)
+	err = out(rankings, reports)
 	if err != nil {
 		log.Fatal(err)
 	}

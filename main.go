@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/PuerkitoBio/goquery"
+	"github.com/eyasuyuki/twitter_fund_of_the_year_analyze/report"
 	"github.com/eyasuyuki/twitter_fund_of_the_year_analyze/tweet"
 	_ "github.com/mattn/go-sqlite3"
 	"log"
@@ -160,6 +161,8 @@ func main() {
 	}
 	// commit
 	tx.Commit()
+
+	report.Output(DatabaseName) //TEST
 
 	jsonText, err := json.Marshal(tweets)
 	if err != nil {
