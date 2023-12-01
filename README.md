@@ -10,7 +10,7 @@ go run main.go
 # SQLite
 
 ```shell
-sqlite3 foy2022.db
+sqlite3 foy2023.db
 ```
 
 ## csv mode
