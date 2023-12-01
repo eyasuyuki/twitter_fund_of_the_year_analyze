@@ -1,6 +1,7 @@
 package report
 
 import (
+	"github.com/eyasuyuki/twitter_fund_of_the_year_analyze/config"
 	"github.com/xuri/excelize/v2"
 	"gorm.io/driver/sqlite" // Sqlite driver based on GGO
 	"gorm.io/gorm"
@@ -64,7 +65,7 @@ type Report struct {
 	TweetAt   string `gorm:"column:tweet_at"`
 }
 
-func read(ds string) ([]Ranking, []Report, error) {
+func read(cf *config.Config, ds string) ([]Ranking, []Report, error) {
 	// open sqlite
 	db, err := gorm.Open(sqlite.Open(ds), &gorm.Config{})
 	if err != nil {
@@ -87,7 +88,6 @@ func read(ds string) ([]Ranking, []Report, error) {
 }
 
 // output filename
-const ReportFile = "./foy2022-tw.xlsx"
 const OldName = "Sheet1"
 const RankingSheet = "順位"
 const CountLabel = "票数"
@@ -120,7 +120,7 @@ func width(f *excelize.File, sheet string, col string, x float64) {
 	f.SetColWidth(sheet, col, col, w*x)
 }
 
-func out(rankings []Ranking, reports []Report) error {
+func out(cf *config.Config, rankings []Ranking, reports []Report) error {
 	// open Excel file
 	f := excelize.NewFile()
 	f.SetSheetName(OldName, RankingSheet)
@@ -183,22 +183,22 @@ func out(rankings []Ranking, reports []Report) error {
 	}
 
 	// close Excel file
-	if err := f.SaveAs(ReportFile); err != nil {
+	if err := f.SaveAs(cf.ReportFile); err != nil {
 		log.Fatal(err)
 	}
 
 	return nil
 }
 
-func Output(ds string) {
+func Output(cf *config.Config, ds string) {
 	// read dababase
-	rankings, reports, err := read(ds)
+	rankings, reports, err := read(cf, ds)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	// output excel
-	err = out(rankings, reports)
+	err = out(cf, rankings, reports)
 	if err != nil {
 		log.Fatal(err)
 	}
