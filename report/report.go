@@ -6,30 +6,44 @@ import (
 	"gorm.io/driver/sqlite" // Sqlite driver based on GGO
 	"gorm.io/gorm"
 	"log"
+	"strconv"
 	"strings"
 )
 
 // ranking
-const RankingSQL = `select
-    count(tweets.ticker) c,
-    tickers.name
-from
-    tweets
-        inner join tickers
-                   on tweets.ticker=tickers.ticker
-group by
-    tweets.ticker
-order by
-    c desc
+const RankingSQL = `WITH CandidateVote AS (
+    select count(tweets.ticker) c,
+          tickers.name name
+   from tweets
+            inner join tickers
+                       on tweets.ticker = tickers.ticker
+   group by tweets.ticker
+),
+RankedVotes AS (
+    SELECT
+        name,
+        c,
+        RANK() OVER (ORDER BY c DESC) AS r
+    FROM
+        CandidateVote
+)
+SELECT
+    r,
+    c,
+    name
+FROM
+    RankedVotes
 `
 
 type Ranking struct {
+	Rank  int `gorm:"column:r"`
 	Count int `gorm:"column:c"`
 	Name  string
 }
 
 // report
 const ReportSQL = `select
+	l.r,
     l.c,
     t2.ticker,
     t2.name fund,
@@ -41,13 +55,28 @@ from
     tweets t
     inner join tickers t2
         on t.ticker = t2.ticker
-    inner join (select
-                    ticker,
-                    count(ticker) c
-                from
-                    tweets
-                group by
-                    ticker) l
+    inner join (WITH CandidateVote AS (
+    select count(tweets.ticker) c,
+           tickers.ticker ticker
+    from tweets
+             inner join tickers
+                        on tweets.ticker = tickers.ticker
+    group by tweets.ticker
+),
+     RankedVotes AS (
+         SELECT
+             ticker,
+             c,
+             RANK() OVER (ORDER BY c DESC) AS r
+         FROM
+             CandidateVote
+     )
+SELECT
+    r,
+    c,
+    ticker
+FROM
+    RankedVotes) l
         on t.ticker = l.ticker
 order by
     l.c desc,
@@ -56,6 +85,7 @@ order by
 `
 
 type Report struct {
+	Rank      int `gorm:"column:r"`
 	Count     int `gorm:"column:c"`
 	Ticker    string
 	Fund      string
@@ -89,7 +119,7 @@ func read(cf *config.Config, ds string) ([]Ranking, []Report, error) {
 
 // output filename
 const OldName = "Sheet1"
-const RankingSheet = "順位"
+const RankingLabel = "順位"
 const CountLabel = "票数"
 const FundLabel = "ファンド名"
 const NameLabel = "名前"
@@ -123,7 +153,7 @@ func width(f *excelize.File, sheet string, col string, x float64) {
 func out(cf *config.Config, rankings []Ranking, reports []Report) error {
 	// open Excel file
 	f := excelize.NewFile()
-	f.SetSheetName(OldName, RankingSheet)
+	f.SetSheetName(OldName, RankingLabel)
 
 	// box style
 	style, err := f.NewStyle(&excelize.Style{Border: []excelize.Border{
@@ -137,48 +167,54 @@ func out(cf *config.Config, rankings []Ranking, reports []Report) error {
 	}
 
 	// ranking
-	f.SetCellStr(RankingSheet, "A1", CountLabel)
-	f.SetCellStr(RankingSheet, "B1", FundLabel)
-	width(f, RankingSheet, "B", 10.0)
+	f.SetCellStr(RankingLabel, "A1", RankingLabel)
+	f.SetCellStr(RankingLabel, "B1", CountLabel)
+	f.SetCellStr(RankingLabel, "C1", FundLabel)
+	width(f, RankingLabel, "C", 12.5)
 	for i, r := range rankings {
-		f.SetCellValue(RankingSheet, col(1, i+2), r.Count)
-		f.SetCellValue(RankingSheet, col(2, i+2), r.Name)
-		f.SetCellStyle(RankingSheet, col(1, 1), col(2, i+2), style)
+		f.SetCellValue(RankingLabel, col(1, i+2), r.Rank)
+		f.SetCellValue(RankingLabel, col(2, i+2), r.Count)
+		f.SetCellValue(RankingLabel, col(3, i+2), r.Name)
+		f.SetCellStyle(RankingLabel, col(1, 1), col(3, i+2), style)
 	}
 
 	prev := ""
 	n := 0
+	offset := 4
 	for _, r := range reports {
-		ticker := r.Ticker
-		if ticker != prev {
+		rank := strconv.Itoa(r.Rank)
+		sheet := rank + "_" + r.Ticker
+		if sheet != prev {
 			n = 0
-			f.NewSheet(ticker)
-			f.SetCellValue(ticker, "A1", r.Count)
-			f.SetCellValue(ticker, "B1", "票")
-			f.SetCellValue(ticker, "C1", r.Fund)
-			f.SetCellValue(ticker, "A2", NameLabel)
-			width(f, ticker, "A", 3.0)
-			f.SetCellValue(ticker, "B2", IdLabel)
-			width(f, ticker, "B", 2.5)
-			f.SetCellValue(ticker, "C2", CommentLabel)
-			width(f, ticker, "C", 12.0)
-			f.SetCellValue(ticker, "D2", TimestampLabel)
-			width(f, ticker, "D", 2.5)
-			prev = ticker
+			f.NewSheet(sheet)
+			f.SetCellValue(sheet, "A1", RankingLabel)
+			f.SetCellValue(sheet, "B1", rank)
+			f.SetCellValue(sheet, "C1", r.Fund)
+			f.SetCellValue(sheet, "A2", CountLabel)
+			f.SetCellValue(sheet, "B2", r.Count)
+			f.SetCellValue(sheet, "A3", NameLabel)
+			width(f, sheet, "A", 2.5)
+			f.SetCellValue(sheet, "B3", IdLabel)
+			width(f, sheet, "B", 2.5)
+			f.SetCellValue(sheet, "C3", CommentLabel)
+			width(f, sheet, "C", 12.5)
+			f.SetCellValue(sheet, "D3", TimestampLabel)
+			width(f, sheet, "D", 3.0)
+			prev = sheet
 		}
-		f.SetCellValue(ticker, col(1, n+3), r.Name)
-		f.SetCellValue(ticker, col(2, n+3), r.TwitterId)
+		f.SetCellValue(sheet, col(1, n+offset), r.Name)
+		f.SetCellValue(sheet, col(2, n+offset), r.TwitterId)
 		com, x := lines(r.Comment)
-		f.SetCellValue(ticker, col(3, n+3), com)
+		f.SetCellValue(sheet, col(3, n+offset), com)
 		if x > 1 {
-			h, err := f.GetRowHeight(ticker, n+3)
+			h, err := f.GetRowHeight(sheet, n+offset)
 			if err != nil {
 				log.Fatal(err)
 			}
-			f.SetRowHeight(ticker, n+3, h*float64(x))
+			f.SetRowHeight(sheet, n+offset, h*float64(x))
 		}
-		f.SetCellValue(ticker, col(4, n+3), r.TweetAt)
-		f.SetCellStyle(ticker, col(1, 2), col(4, n+3), style)
+		f.SetCellValue(sheet, col(4, n+offset), r.TweetAt)
+		f.SetCellStyle(sheet, col(1, 3), col(4, n+offset), style)
 		n = n + 1
 	}
 
